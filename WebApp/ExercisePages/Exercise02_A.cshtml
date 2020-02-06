@@ -1,0 +1,73 @@
+﻿@{
+    Layout = "~/_Layout.cshtml";
+    Page.Title = string.Format("Razor - {0}", "Exercise 02 A");
+
+    string artistid = "";
+    string artistname = "";
+
+    var artistarg = Request.Form["artistArg"];
+    var thebutton = Request.Form["theButton"];
+}
+
+@section banner {
+    <h1>@Page.Title</h1>
+}
+
+@if (IsPost)
+{
+    <p>IsPost = true</p>
+    if (thebutton.Equals("reset"))
+    {
+        <p style="color:darkblue">The Reset Button was just Pressed</p>
+        artistarg = "";
+        artistid = "";
+    }
+    else
+    {
+
+        var db = Database.Open("CHINOOK");
+
+        string sqlcommand1 = "SELECT ArtistId, Name FROM Artists WHERE Name LIKE @0 ORDER BY Name";
+        var partialstring = "%" + artistarg + "%";
+        var results = db.Query(sqlcommand1, partialstring);
+
+        if (results.Count() == 0)
+        {
+            <p style="color:firebrick">There was no record returned from the Data Base</p>
+            artistarg = "";
+            artistid = "";
+        }
+        else
+        {
+            Response.Redirect("SimpleQueryLikePage2.cshtml?cid=" + artistarg);
+
+        }
+    }
+}
+else
+{
+    <p>IsPost = false</p>
+    <p style="color:darkblue">The Data Base has NOT been queried</p>
+    artistarg = "";
+}
+
+<form id="theform" method="post">
+    <div class="row">
+        <div class="col-3">
+            <div class="offset-1">
+                <label id="lblartistArg" for="artistArg">Enter a partial artist name:</label>&nbsp;&nbsp;
+                <input type="text" id="artistArg" name="artistArg"
+                       value="@artistarg" placeholder="partial artist name" />
+                <br /><br />
+                <button type="submit" id="theButton" name="theButton"
+                        value="submit" class="btn btn-primary">
+                    Fetch
+                </button>&nbsp;&nbsp;
+                <button type="submit" id="theButton" name="theButton"
+                        value="reset" class="btn btn-light">
+                    Reset
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
