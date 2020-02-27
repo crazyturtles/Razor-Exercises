@@ -1,73 +1,60 @@
 ﻿@{
     Layout = "~/_Layout.cshtml";
-    Page.Title = string.Format("Razor - {0}", "Exercise 02 A");
+    Page.Title = string.Format("Razor - {0}", "Exercise 02");
 
-    string artistid = "";
-    string artistname = "";
+    var Button = Request.Form["Button"];
+    var ArtistName = Request.Form["ArtistName"];
+    var artistName = "%" + ArtistName + "%";
+    var db = Database.Open("CHINOOK");
+    var queryCommand = @"SELECT ArtistId FROM Artists WHERE Name like @0";
+    var Results = db.QuerySingle(queryCommand, artistName);
 
-    var artistarg = Request.Form["artistArg"];
-    var thebutton = Request.Form["theButton"];
+    if (string.IsNullOrEmpty(artistName)) { artistName = ""; }
 }
 
 @section banner {
     <h1>@Page.Title</h1>
 }
 
-@if (IsPost)
-{
-    <p>IsPost = true</p>
-    if (thebutton.Equals("reset"))
+<div>
+    @if (IsPost)
     {
-        <p style="color:darkblue">The Reset Button was just Pressed</p>
-        artistarg = "";
-        artistid = "";
-    }
-    else
-    {
-
-        var db = Database.Open("CHINOOK");
-
-        string sqlcommand1 = "SELECT ArtistId, Name FROM Artists WHERE Name LIKE @0 ORDER BY Name";
-        var partialstring = "%" + artistarg + "%";
-        var results = db.Query(sqlcommand1, partialstring);
-
-        if (results.Count() == 0)
+        if (Button.Equals("reset"))
         {
-            <p style="color:firebrick">There was no record returned from the Data Base</p>
-            artistarg = "";
-            artistid = "";
+            ArtistName = "";
         }
         else
         {
-            Response.Redirect("SimpleQueryLikePage2.cshtml?cid=" + artistarg);
-
+            if (String.IsNullOrEmpty(ArtistName))
+            {
+                <p>
+                    Enter the name of an artist
+                </p>
+                ArtistName = "";
+            }
+            else
+            {
+                if (Results == null)
+                {
+                    <p><span style="color:blue">No name of artist found of the name: @ArtistName</span></p>
+                }
+                else
+                {
+                    Response.Redirect("Exercise02_B.cshtml?artistName=" + artistName);
+                }
+            }
         }
     }
-}
-else
-{
-    <p>IsPost = false</p>
-    <p style="color:darkblue">The Data Base has NOT been queried</p>
-    artistarg = "";
-}
-
-<form id="theform" method="post">
-    <div class="row">
-        <div class="col-3">
-            <div class="offset-1">
-                <label id="lblartistArg" for="artistArg">Enter a partial artist name:</label>&nbsp;&nbsp;
-                <input type="text" id="artistArg" name="artistArg"
-                       value="@artistarg" placeholder="partial artist name" />
-                <br /><br />
-                <button type="submit" id="theButton" name="theButton"
-                        value="submit" class="btn btn-primary">
-                    Fetch
-                </button>&nbsp;&nbsp;
-                <button type="submit" id="theButton" name="theButton"
-                        value="reset" class="btn btn-light">
-                    Reset
-                </button>
+    <form id="theForm" action="" method="post">
+        <div class="row">
+            <div class="col-md-3">
+                <label id="forArtistName">Enter an Artist Name:</label>
+                <input type="text" name="ArtistName" id="ArtistNameID"
+                       value="@ArtistName" /><br /><br />
+                <button type="submit" name="Button" value="submit">Search</button>&nbsp;&nbsp;
+                <button type="submit" name="Button" value="reset">Clear</button>
             </div>
+
         </div>
-    </div>
-</form>
+    </form>
+</div>

@@ -1,8 +1,49 @@
 ﻿@{
     Layout = "~/_Layout.cshtml";
-    Page.Title = string.Format("Razor - {0}", "Exercise 02 B");
+    Page.Title = string.Format("Razor - {0}", "Exercise 02");
+    var artistName = Request.QueryString["artistName"];
+    var ArtistId = Request.Form["ArtistId"];
+    if (string.IsNullOrEmpty(artistName))
+    {
+        Response.Redirect("Exercise02_A.cshtml");
+    }
+    var db = Database.Open("CHINOOK");
+    var command = @"SELECT ArtistId, Name FROM Artists WHERE Name like @0 ORDER BY Name";
+    var artistname = db.Query(command, "%" + artistName + "%");
 }
 
 @section banner {
     <h1>@Page.Title</h1>
 }
+
+<div>
+    @if (IsPost)
+    {
+        if (ArtistId.Equals("0"))
+        {
+            <p><span style="color:firebrick">Make a select of an artist.</span></p>
+        }
+        else
+        {
+            Response.Redirect("Exercise02_C.cshtml?artistId=" + ArtistId);
+        }
+    }
+
+    <form id="Ex02" action="" method="post">
+        <div class="row">
+            <div class="col-sm-offset-3">
+                <label id="forArtistList">Select an Artist:</label><br />
+                <select id="ArtistID" name="ArtistId">
+                    <option value="0">select...</option>
+                    @foreach (var item in artistname)
+                    {
+                        <option value="@item.ArtistId"> @item.Name</option>
+                    }
+                </select>&nbsp;&nbsp;
+                <button type="submit" name="formButton" value="submit">
+                    Fetch Albums
+                </button>
+            </div>
+        </div>
+    </form>
+</div>

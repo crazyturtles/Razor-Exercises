@@ -6,3 +6,118 @@
 @section banner {
     <h1>@Page.Title</h1>
 }
+
+@{
+    Layout = "~/_Layout.cshtml";
+    Page.Title = "Exercise 03";
+
+    var thebutton = Request.Form["formButton"];
+
+    var title = "";
+    var SelectedArtistid = "";
+    var selectedYear = "";
+    var selectedLabel = "";
+
+    var db = Database.Open("CHINOOK");
+
+    var command = @"SELECT ArtistId, Name 
+                    FROM Artists 
+                    ORDER BY Name";
+
+    var results = db.Query(command);
+
+    Validation.Add("Title", Validator.Required("Title is required."), Validator.StringLength(60, 1, "Title is limited to 60 characters"));
+    Validation.Add("ArtistId", Validator.Required("Artist ID is required."));
+    Validation.Add("ReleaseYear", Validator.Required("Year is required."), Validator.Range(1950, 2019, "Must be between 1950 and 2019."));
+    Validation.Add("ReleaseLabel", Validator.StringLength(50, 0, "Label is limited to 50 characters."));
+}
+
+@if (IsPost)
+{
+
+    if (thebutton.Equals("reset"))
+    {
+        <p class="col-sm-11 text-center"><span style="color:blue">Cleared by user</span></p>
+        title = "";
+        SelectedArtistid = "";
+        selectedYear = "";
+        selectedLabel = "";
+
+    }
+    else
+    {
+        title = Request.Form["Title"];
+        SelectedArtistid = Request.Form["ArtistId"];
+        selectedYear = Request.Form["ReleaseYear"];
+        selectedLabel = Request.Form["ReleaseLabel"];
+
+        if (Validation.IsValid())
+        {
+
+            try
+            {
+                var insertCommand = @"INSERT INTO Albums (Title, ArtistId, ReleaseYear, ReleaseLabel)
+                                      VALUES(@0, @1, @2, @3)";
+
+                db.Execute(insertCommand, string.IsNullOrEmpty("title") ? null : title, SelectedArtistid.Equals("0") ? null : SelectedArtistid, selectedYear,string.IsNullOrEmpty("selectedLabel") ?null : selectedLabel, 0);
+
+                <p class="col-sm-11 text-center">
+                    <span style="color:green">
+                        <strong>New product added to file.</strong>
+                    </span>
+                </p>
+            }
+            catch (Exception ex)
+            {
+                <p class="col-sm-11 text-center">
+                    <span style="color:firebrick">
+                        <strong>@ex.Message</strong>
+                    </span>
+                </p>
+            }
+        }
+    }
+}
+
+@Html.ValidationSummary()
+<form id="theForm" action="" method="post">
+    <div class="row">
+        <div class="col-sm-5 text-right">
+            <label id="title">Title:</label><br />
+            <label id="ArtistId">Artist:</label><br />
+            <label id="ReleaseYear">Year:</label><br />
+            <label id="ReleaseLabel">Label:</label><br />
+
+        </div>
+        <div class="col-sm-4">
+            <input name="title" id="title" type="text" value="@title"
+                   title="Title:" /><br />
+            <select id="ArtistId" name="ArtistId">
+                <option value="0">select ...</option>
+                @foreach (var item in results)
+                {
+                    <option value="@item.ArtistId">
+                        @item[1]
+                    </option>
+                }
+            </select><br />
+            <input name="ReleaseYear" id="ReleaseYear" type="text" value="@selectedYear"
+                   title="Year" /><br />
+            <input name="ReleaseLabel" id="ReleaseLabel" type="text" value="@selectedLabel"
+                   title="Label" /><br />
+
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-11 text-center">
+            <button type="submit" name="formButton" value="submit"
+                    class="btn btn-primary" style="width:90px">
+                Add
+            </button>&nbsp;&nbsp;
+            <button type="submit" name="formButton" value="reset"
+                    class="btn " style="width:90px">
+                Clear
+            </button>
+        </div>
+    </div>
+</form>

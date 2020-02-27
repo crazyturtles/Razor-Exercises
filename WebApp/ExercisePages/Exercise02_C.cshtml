@@ -1,8 +1,43 @@
 ﻿@{
     Layout = "~/_Layout.cshtml";
-    Page.Title = string.Format("Razor - {0}", "Exercise 02 C");
+    Page.Title = string.Format("Razor - {0}", "Exercise 02");
+    var ArtistID = Request.QueryString["artistId"];
+    if (string.IsNullOrEmpty(ArtistID))
+    {
+        Response.Redirect("Exercise02_A.cshtml");
+    }
+
+    var db = Database.Open("CHINOOK");
+    var scalarCommand = @"SELECT Name 
+                          FROM Artists 
+                          WHERE ArtistId = @0";
+    var Name = db.QueryValue(scalarCommand, ArtistID);
+    var queryCommand = @"SELECT AlbumId, Title, ReleaseYear, ReleaseLabel 
+                         FROM Albums 
+                         WHERE ArtistId = @0 
+                         ORDER BY Title";
+    var results = db.Query(queryCommand, ArtistID);
+    var grid = new WebGrid(results, rowsPerPage: 5);
 }
 
 @section banner {
     <h1>@Page.Title</h1>
 }
+
+<div>
+    <div class="row">
+        <div class="container">
+            <h2>Albums of @Name</h2>
+            @grid.GetHtml(tableStyle: "table table-bordered table-striped table-hover",
+              mode: WebGridPagerModes.All,
+              firstText: "Start",
+              lastText: "End",
+              columns: grid.Columns(
+                  grid.Column(columnName: "AlbumID", header: "Album ID"),
+                  grid.Column(columnName: "Title", header: "Title"),
+                  grid.Column(columnName: "ReleaseYear", header: "Released"),
+                  grid.Column(columnName: "ReleaseLabel", header: "Label"),
+                  grid.Column(header: "", format: @<text><a href="~/ExercisePages/Exercise04.cshtml?artistId=@item.albumID">Edit</a></text>)))
+        </div>
+    </div>
+</div>

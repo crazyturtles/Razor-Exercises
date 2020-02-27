@@ -1,0 +1,167 @@
+﻿@{
+    Layout = "~/_Layout.cshtml";
+    Page.Title = string.Format("Razor - {0}", "Exercise 04");
+    var albumID = Request.QueryString["artistId"];
+
+    if (albumID.IsEmpty())
+    {
+        Response.Redirect("Exercise02_a.cshtml");
+    }
+
+    var db = Database.Open("Chinook");
+    var albumString = @"SELECT AlbumId, Title, ArtistId, ReleaseYear, ReleaseLabel
+                FROM Albums
+                WHERE AlbumId = @0";
+    var artistQuery = @"SELECT ArtistId, Name
+                FROM Artists
+                ORDER BY Name asc";
+    var artistList = db.Query(artistQuery);
+    var titleName = Request.Form["titleName"];
+    var year = Request.Form["year"];
+    var selectedArtist = Request.Form["artistName"]; ;
+    var labelName = Request.Form["labelName"];
+    var updateString = @"UPDATE Albums
+                 SET Title = @0, ArtistId = @1, ReleaseYear = @2, ReleaseLabel = @3
+                 WHERE AlbumId = @4";
+    var deleteString = @"DELETE Albums
+                 WHERE AlbumId = @0";
+    var thebutton = Request.Form["theButton"];
+    var date = DateTime.Now;
+}
+
+@section banner {
+    <h1>@Page.Title</h1>
+}
+
+@if (IsPost)
+{
+    if (thebutton.Equals("cancel"))
+    {
+        titleName = "";
+        selectedArtist = "0";
+        year = "";
+        labelName = "";
+        var queryAlbum = db.QuerySingle(albumString, albumID);
+        <p>
+            <span style="color:blue">
+                User has cancelled the action. Return to search for another album
+            </span>
+            <a href="~/ExercisePages/Exercise02_C.cshtml?artistId=@queryAlbum.ArtistId">go to search...</a>
+        </p>
+    }
+    else if (thebutton.Equals("delete"))
+    {
+        try
+        {
+            var queryAlbum = db.QuerySingle(albumString, albumID);
+            int results = db.Execute(deleteString, albumID);
+            if (results > 0)
+            {
+                <p>
+                    <span style="color:green">Album Deleted! Return to search for another album.</span>
+                    <a href="~/ExercisePages/Exercise02_C.cshtml?artistId=@queryAlbum.ArtistId">go to search...</a>
+                </p>
+
+                titleName = "";
+                selectedArtist = "0";
+                year = "";
+                labelName = "";
+            }
+            else
+            {
+                <p><span style="color:red">No such Album exists!</span></p>
+            }
+        }
+        catch (Exception ex)
+        {
+            <p><span style="color:blue">Delete failed. @ex.Message</span></p>
+        }
+    }
+    else
+    {
+        var queryAlbum = db.QuerySingle(albumString, albumID);
+        selectedArtist = Request.Form["artistName"];
+        year = Request.Form["year"];
+
+        if (Validation.IsValid())
+        {
+            try
+            {
+                int results = db.Execute(updateString, titleName, int.Parse(selectedArtist), int.Parse(year), labelName, int.Parse(albumID));
+                if (results > 0)
+                {
+                    <p>
+                        <span style="color:green">Album Updated! See</span>
+                        <a href="~/ExercisePages/Exercise02_C.cshtml?artistId=@queryAlbum.ArtistId">the updated album list</a>
+                    </p>
+                }
+            }
+            catch (Exception ex)
+            {
+                <p><span style="color:blue">Update failed. @ex.Message</span></p>
+            }
+        }
+    }
+}
+
+else
+{
+    var queryAlbum = db.QuerySingle(albumString, albumID);
+    if (queryAlbum == null)
+    {
+        Response.Redirect("Exercise02_A.cshtml");
+    }
+    else
+    {
+        titleName = queryAlbum.Title;
+        year = queryAlbum.ReleaseYear.ToString();
+        selectedArtist = queryAlbum.ArtistId.ToString();
+        labelName = queryAlbum.ReleaseLabel;
+    }
+}
+
+<div class="form-group">
+    <form id="EX04" action="" method="post">
+        <div class="row">
+            <div class="col-md-1">
+                <label id="forTitle">Title:</label><br />
+                <label id="forArtist">Artist:</label><br />
+                <label id="forYear">Year:</label><br />
+                <label id="forLabel">Label:</label><br />
+            </div>
+
+            <div class="col-md-3">
+                <input type="text" name="titleName" id="titleName" value="@titleName" /><br />
+                <select id="artistName" name="artistName">
+                    <option value="0">select..</option>
+                    @foreach (var item in artistList)
+                    {
+                        if (selectedArtist.Equals(item.ArtistId.ToString()))
+                        {
+                            <option value="@item.ArtistId" selected>@item.Name</option>
+                        }
+                        else
+                        {
+                            <option value="@item.ArtistId">@item.Name</option>
+                        }
+                    }
+                </select><br />
+                <input type="number" name="year" id="year" step="1" value="@year" /><br />
+                <input type="text" name="labelName" id="labelName" value="@labelName" /><br />
+            </div>
+        </div><br />
+
+        <div class="row">
+            <button type="submit" name="theButton" id="theUpdate" class="btn btn-primary" value="update">Update</button>&nbsp;&nbsp;
+            <button type="submit" name="theButton" id="theDelete" class="btn btn-primary" value="delete">Delete</button>&nbsp;&nbsp;
+            <button type="submit" name="theButton" id="theCancel" class="btn btn-primary" value="cancel">Cancel</button>
+        </div>
+
+        <script type="text/javascript">
+                document.getElementById("theDelete").onclick = ConfirmDelete;
+                function ConfirmDelete() {
+                    return confirm("Are you sure you want to remove @titleName?");
+                }
+        </script>
+    </form>
+</div>
